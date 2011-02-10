@@ -3,13 +3,21 @@ $ ./gen_graph.rb 10 10 3 | sort | uniq > graph.tsv
 $ ./simple_bsp.rb < graph.tsv
 
 # m/r cmdline version
-$ cat input/* | ./emit_cc_to_neighbours.rb | sort | ./min_cc_id_from_neighbours.rb
+$ rm -rf iter[12]
+$ mkdir iter{1,2}
+$ cat iter0/* | ./emit_cc_to_neighbours.rb | sort | ./min_cc_id_from_neighbours.rb > iter1/part
+$ cat iter1/* | ./emit_cc_to_neighbours.rb | sort | ./min_cc_id_from_neighbours.rb > iter2/part
+$ cat iter2/part*
 
 # setup m/r hadoop version
 $ alias hfs='hadoop fs'
 $ hfs -mkdir /user/mat/
-$ hfs -put input .
+$ hfs -put iter0 .
 
 # (re)run m/r hadoop version
-$ hfs -rmr output
-$ ./streaming_job.sh
+$ hfs -rmr iter[12]
+$ ./streaming_job.sh iter[01]
+$ ./streaming_job.sh iter[12]
+$ hfs -cat iter2/part*
+
+but this version is ineffecient, and broadcasts 
