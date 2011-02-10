@@ -1,2 +1,15 @@
+# simple version of bsp using ruby that generates a sequence of pngs
 $ ./gen_graph.rb 10 10 3 | sort | uniq > graph.tsv
 $ ./simple_bsp.rb < graph.tsv
+
+# m/r cmdline version
+$ cat input/* | ./emit_cc_to_neighbours.rb | sort | ./min_cc_id_from_neighbours.rb
+
+# setup m/r hadoop version
+$ alias hfs='hadoop fs'
+$ hfs -mkdir /user/mat/
+$ hfs -put input .
+
+# (re)run m/r hadoop version
+$ hfs -rmr output
+$ ./streaming_job.sh
