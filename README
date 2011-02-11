@@ -2,11 +2,39 @@
 $ ./gen_graph.rb 10 10 3 | sort | uniq > graph.tsv
 $ ./simple_bsp.rb < graph.tsv
 
+# simple script to convert...
+
+$ ./convert_to_mr_format.rb < graph.tsv > graph.mr.tsv
+
+from graph format above 
+node_a node_b (a<b)
+1 2
+2 3
+2 4
+2 5
+3 4
+6 7
+
+to format used for m/r version below
+node TAB bootstrap cc_id TAB neighbours (space seperated)
+1    1	 2
+2    2	 1 3 4 5
+3    3	 2 4
+4    4	 2 3
+5    5	 2
+6    6	 7
+7    7	 6
+
+sample graph has had this conversion done as is checked in as files
+iter0/graph1 and iter0/graph2
+
+# v1
+
 # m/r cmdline version
 $ rm -rf iter[12]
 $ mkdir iter{1,2}
-$ cat iter0/* | ./emit_cc_to_neighbours.rb | sort | ./min_cc_id_from_neighbours.rb > iter1/part
-$ cat iter1/* | ./emit_cc_to_neighbours.rb | sort | ./min_cc_id_from_neighbours.rb > iter2/part
+$ cat iter0/* | ./v1/emit_cc_to_neighbours.rb | sort | ./v1/min_cc_id_from_neighbours.rb > iter1/part
+$ cat iter1/* | ./v1/emit_cc_to_neighbours.rb | sort | ./v1/min_cc_id_from_neighbours.rb > iter2/part
 $ cat iter2/part*
 
 # setup m/r hadoop version
@@ -16,8 +44,32 @@ $ hfs -put iter0 .
 
 # (re)run m/r hadoop version
 $ hfs -rmr iter[12]
-$ ./streaming_job.sh iter[01]
-$ ./streaming_job.sh iter[12]
+$ cd v1
+$ ./streaming_job.sh iter0 iter1
+$ ./streaming_job.sh iter1 iter2
 $ hfs -cat iter2/part*
 
-but this version is ineffecient, and broadcasts 
+but this version is ineffecient, and each node broadcasts each round even when there have been no changes
+todo: a version that maintains a stable flag so that nodes only pass on new cc_ids when they have changed
+
+# v2
+
+before doing that though there is another problem with the scalability, currently a record includes all edges
+incident to the node, a very large number of adjacent edges will crash the system, we need to break up
+the edges across mulitple records
+
+eg instead of 
+id cc_id neighbours
+1  1     [1,2,3,4]
+
+we need to support
+id cc_id neighbours
+1  1     [1,2]
+1  1     [3,4]
+
+# m/r cmdline version
+$ rm -rf iter[12]
+$ mkdir iter{1,2}
+$ cat iter0/* | ./v2/emit_cc_to_neighbours.rb | sort | ./v2/min_cc_id_from_neighbours.rb > iter1/part
+$ cat iter1/* | ./v2/emit_cc_to_neighbours.rb | sort | ./v2/min_cc_id_from_neighbours.rb > iter2/part
+$ cat iter2/part*
