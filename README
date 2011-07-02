@@ -8,12 +8,12 @@ $ ./convert_to_mr_format.rb < graph.tsv > graph.mr.tsv
 
 from graph format above 
 node_a node_b (a<b)
-1 2
-2 3
-2 4
-2 5
-3 4
-6 7
+1      2
+2      3
+2      4
+2      5
+3      4
+6      7
 
 to format used for m/r version below
 node TAB bootstrap cc_id TAB neighbours (space seperated)
